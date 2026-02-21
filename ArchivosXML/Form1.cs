@@ -1,243 +1,77 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Windows.Forms;
+using System.Xml.Serialization;
+
 namespace ArchivosXML
 {
     public partial class Form1 : Form
     {
-        private List<string[]> csvData;
-        private string[] headers;
-        private int selectedRowIndex = -1;
-        private string rutaArchivo;
+        private List<Persona> listaPersonas = new List<Persona>();
+        private string rutaArchivo = "";
+
         public Form1()
         {
             InitializeComponent();
-            ConfiguracionDataGridView();
-            dataGridView1.SelectionChanged += DataGridView1_SelectionChanged;
+            ConfigurarDataGrid();
+            dataGridView1.SelectionChanged += dataGridView1_SelectionChanged;
         }
-        private void ConfiguracionDataGridView()
+
+        private void ConfigurarDataGrid()
         {
-            dataGridView1.VirtualMode = true;
-            dataGridView1.ReadOnly = true;
             dataGridView1.AllowUserToAddRows = false;
-            dataGridView1.AllowUserToDeleteRows = false;
             dataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dataGridView1.MultiSelect = false;
-            dataGridView1.RowHeadersVisible = false;
-            dataGridView1.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
-            dataGridView1.CellValueNeeded += DataGridView1_CellValueNeeded;
-
-            dataGridView2.ReadOnly = false;
-            dataGridView2.AllowUserToAddRows = false;
-            dataGridView2.AllowUserToDeleteRows = false;
-            dataGridView2.RowHeadersVisible = false;
-            dataGridView2.SelectionMode = DataGridViewSelectionMode.CellSelect;
-
-        }
-        private void DataGridView1_CellValueNeeded(object sender, DataGridViewCellValueEventArgs e)
-        {
-            // Solo proporcionar datos cuando se necesiten (virtualización)
-            if (csvData != null && e.RowIndex < csvData.Count)
-            {
-                var row = csvData[e.RowIndex];
-                if (e.ColumnIndex < row.Length)
-                {
-                    e.Value = row[e.ColumnIndex];
-                }
-            }
-        }
-        private void DataGridView1_SelectionChanged(object? sender, EventArgs e)
-        {
-            if (csvData == null)
-            {
-                selectedRowIndex = -1;
-                return;
-            }
-
-            if (selectedRowIndex >= 0 && selectedRowIndex < csvData.Count)
-            {
-                SaveEditorToCsvData(selectedRowIndex);
-            }
-
-            if (dataGridView1.SelectedRows.Count == 0)
-            {
-                selectedRowIndex = -1;
-                return;
-            }
-
-            var sel = dataGridView1.SelectedRows[0];
-            int rowIndex = sel.Index;
-            if (rowIndex < 0 || rowIndex >= csvData.Count)
-            {
-                selectedRowIndex = -1;
-                return;
-            }
-
-            selectedRowIndex = rowIndex;
-            LoadRowIntoEditor(csvData[rowIndex]);
-        }
-        private void SaveEditorToCsvData(int rowIndex)
-        {
-            if (csvData == null || headers == null) return;
-            if (rowIndex < 0 || rowIndex >= csvData.Count) return;
-            try
-            {
-                dataGridView2.EndEdit();
-                dataGridView2.CommitEdit(DataGridViewDataErrorContexts.Commit);
-            }
-            catch
-            {
-
-            }
-            var newRow = new string[headers.Length];
-            for (int i = 0; i < headers.Length; i++)
-            {
-                var cell = dataGridView2.Rows[0].Cells[i];
-                newRow[i] = cell?.Value?.ToString() ?? string.Empty;
-            }
-            csvData[rowIndex] = newRow;
-            dataGridView1.InvalidateRow(rowIndex);
-        }
-        private void LoadRowIntoEditor(string[] row)
-        {
-            int colCount = Math.Min(row.Length, dataGridView2.ColumnCount);
-
-            for (int i = 0; i < dataGridView2.ColumnCount; i++)
-            {
-                dataGridView2.Rows[0].Cells[i].Value = i < colCount ? row[i] : string.Empty;
-            }
-        }
-        private void CargarXML(string rutaArchivo)
-        {
-            try
-            {
-                Cursor = Cursors.WaitCursor;
-                string? firstLine = File.ReadLines(rutaArchivo).FirstOrDefault();
-
-                if (string.IsNullOrEmpty(firstLine))
-                {
-                    MessageBox.Show("El archivo está vacío.", "Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                headers = firstLine.Split(',');
-
-                csvData = File.ReadAllLines(rutaArchivo)
-                              .Skip(1)
-                              .Select(line => line.Split(','))
-                              .ToList();
-
-                dataGridView1.Columns.Clear();
-
-                for (int i = 0; i < headers.Length; i++)
-                {
-                    dataGridView1.Columns.Add($"Column{i}", headers[i]);
-                }
-
-                dataGridView1.RowCount = csvData.Count;
-
-                dataGridView2.Columns.Clear();
-                for (int i = 0; i < headers.Length; i++)
-                {
-                    dataGridView2.Columns.Add($"EditCol{i}", headers[i]);
-                }
-                dataGridView2.RowCount = 1;
-
-                selectedRowIndex = -1;
-                dataGridView1.ClearSelection();
-
-                MessageBox.Show($"Se cargaron {csvData.Count:N0} registros exitosamente.");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error al cargar el archivo: {ex.Message}",
-                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                Cursor = Cursors.Default;
-            }
-        }
-        private void btnBuscar_Click(object sender, EventArgs e)
-        {
-
-            if (dataGridView1.Rows.Count == 0)
-            {
-                MessageBox.Show("No hay datos cargados");
-                return;
-            }
-
-            string textoBuscar = txtBuscar.Text.Trim();
-
-            if (string.IsNullOrEmpty(textoBuscar))
-            {
-                MessageBox.Show("Escribe un texto para buscar");
-                return;
-            }
-
-            textoBuscar = textoBuscar.ToLower();
-            dataGridView1.ClearSelection();
-            foreach (DataGridViewRow fila in dataGridView1.Rows)
-            {
-                if(fila.IsNewRow) continue;
-                foreach (DataGridViewCell celda in fila.Cells)
-                {
-                    if (celda.Value != null &&
-                        celda.Value.ToString().ToLower() == textoBuscar)
-                    {
-                        fila.Selected = true;
-
-                        dataGridView1.FirstDisplayedScrollingRowIndex = fila.Index;
-
-                        MessageBox.Show($"Texto encontrado en la fila {fila.Index + 1}");
-                        return;
-                    }
-                }
-            }
-
-            MessageBox.Show("Texto no encontrado");
+            dataGridView1.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         }
 
         private void btnCrearArchivo_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtNombre.Text) || string.IsNullOrWhiteSpace(txtCelular.Text))
-            {
-                MessageBox.Show("Debes llenar con informacion.",
-                    "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
             SaveFileDialog sfd = new SaveFileDialog();
-            sfd.Filter = "Archivos XML|*.xml|Todos los archivos|*.*";
-            sfd.Title = "";
+            sfd.Filter = "Archivos XML|*.xml";
+
             if (sfd.ShowDialog() == DialogResult.OK)
             {
-                try
-                {
-                    string ruta = sfd.FileName;
-                    string encabezado = "Nombre, # Celular";
-                    string datos = txtNombre.Text + "," + txtCelular.Text;
-                    File.WriteAllLines(ruta, new[] { encabezado, datos });
-                    MessageBox.Show("Archivo creado exitosamente.",
-                        "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    txtNombre.Clear();
-                    txtCelular.Clear();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error al crear el archivo: {ex.Message}",
-                        "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                rutaArchivo = sfd.FileName;
+                listaPersonas = new List<Persona>();
+                GuardarXML();
+                MessageBox.Show("Archivo XML creado correctamente.");
             }
         }
 
         private void btnAbrirArchiv_Click(object sender, EventArgs e)
         {
-            using (OpenFileDialog ofd = new OpenFileDialog())
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Filter = "Archivos XML|*.xml";
+
+            if (ofd.ShowDialog() == DialogResult.OK)
             {
-                ofd.Filter = "Archivos XML|*.xml|Todos los archivos|*.*";
-                if (ofd.ShowDialog() == DialogResult.OK)
+                rutaArchivo = ofd.FileName;
+                CargarXML(rutaArchivo);
+            }
+        }
+
+        private void CargarXML(string ruta)
+        {
+            try
+            {
+                if (!File.Exists(ruta)) return;
+
+                XmlSerializer serializer = new XmlSerializer(typeof(List<Persona>));
+
+                using (FileStream fs = new FileStream(ruta, FileMode.Open))
                 {
-                    rutaArchivo = ofd.FileName;
-                    CargarXML(ofd.FileName);
+                    listaPersonas = (List<Persona>)serializer.Deserialize(fs);
                 }
+
+                dataGridView1.DataSource = null;
+                dataGridView1.DataSource = listaPersonas;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al leer XML: " + ex.Message);
             }
         }
 
@@ -245,139 +79,121 @@ namespace ArchivosXML
         {
             if (string.IsNullOrEmpty(rutaArchivo))
             {
-                MessageBox.Show("No hay ningún archivo cargado en el DataGrid.",
-                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("No hay archivo abierto.");
                 return;
             }
-
             if (string.IsNullOrWhiteSpace(txtNombre.Text) || string.IsNullOrWhiteSpace(txtCelular.Text))
             {
-                MessageBox.Show("Debe escribir información en ambos TextBox.",
-                    "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Llena ambos campos.");
                 return;
             }
 
-            try
+            listaPersonas.Add(new Persona
             {
-                string linea = txtNombre.Text + "," + txtCelular.Text;
+                Nombre = txtNombre.Text,
+                Celular = int.Parse(txtCelular.Text)
+            });
 
-                File.AppendAllText(rutaArchivo, linea + Environment.NewLine);
+            dataGridView1.DataSource = null;
+            dataGridView1.DataSource = listaPersonas;
 
-                string[] nuevaFila = linea.Split(',');
-                csvData.Add(nuevaFila);
-
-                dataGridView1.RowCount = csvData.Count;
-                dataGridView1.Refresh();
-
-                int lastRow = dataGridView1.RowCount - 1;
-                if (lastRow >= 0)
-                {
-                    dataGridView1.ClearSelection();
-                    dataGridView1.Rows[lastRow].Selected = true;
-                    dataGridView1.FirstDisplayedScrollingRowIndex = lastRow;
-                }
-
-                MessageBox.Show("Datos agregados correctamente.",
-                    "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                txtNombre.Clear();
-                txtCelular.Clear();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error al agregar datos: " + ex.Message,
-                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
-            }
+            txtNombre.Clear();
+            txtCelular.Clear();
         }
 
         private void btnEliminar_Click(object sender, EventArgs e)
         {
-            if (dataGridView1.CurrentCell == null)
+            if (string.IsNullOrEmpty(rutaArchivo))
             {
-                MessageBox.Show("No hay ninguna fila seleccionada.", "Información",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("No hay archivo abierto.");
+                return;
+            }
+            if (dataGridView1.CurrentRow == null) return;
+
+            int index = dataGridView1.CurrentRow.Index;
+
+            var confirm = MessageBox.Show("¿Eliminar este registro?", "Confirmar",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (confirm == DialogResult.Yes)
+            {
+                listaPersonas.RemoveAt(index);
+                dataGridView1.DataSource = null;
+                dataGridView1.DataSource = listaPersonas;
+            }
+        }
+
+        private void btnBuscar_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(rutaArchivo))
+            {
+                MessageBox.Show("No hay archivo abierto.");
+                return;
+            }
+            string texto = txtBuscar.Text.Trim().ToLower();
+
+            if (string.IsNullOrEmpty(texto))
+            {
+                MessageBox.Show("Escribe un texto para buscar.");
                 return;
             }
 
-            int rowIndex = dataGridView1.CurrentCell.RowIndex;
-
-            if (csvData == null || rowIndex < 0 || rowIndex >= csvData.Count)
+            foreach (DataGridViewRow fila in dataGridView1.Rows)
             {
-                MessageBox.Show("No hay datos para eliminar.", "Información",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
+                fila.Selected = false;
+
+                string nombre = fila.Cells[0].Value?.ToString()?.Trim().ToLower() ?? "";
+                string celular = fila.Cells[1].Value?.ToString()?.Trim().ToLower() ?? "";
+
+                if (nombre == texto || celular == texto)
+                {
+                    fila.Selected = true;
+                    dataGridView1.FirstDisplayedScrollingRowIndex = fila.Index;
+                    MessageBox.Show("Encontrado en la fila " + (fila.Index + 1));
+                    return;
+                }
             }
 
-            var confirm = MessageBox.Show("¿Estás seguro de eliminar este registro?",
-                "Confirmar eliminación", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-            if (confirm != DialogResult.Yes)
-                return;
-
-            selectedRowIndex = -1; // muy importante
-
-            csvData.RemoveAt(rowIndex);
-
-            dataGridView1.RowCount = csvData.Count;
-
-            if (csvData.Count > 0)
-            {
-                int newIndex = Math.Min(rowIndex, csvData.Count - 1);
-                dataGridView1.CurrentCell = dataGridView1.Rows[newIndex].Cells[0];
-            }
-
-            dataGridView1.Invalidate();
-
-            MessageBox.Show("Registro eliminado.", "Listo",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
-        
+            MessageBox.Show("No encontrado.");
         }
 
         private void btnGuardar_Click(object sender, EventArgs e)
         {
-            if (csvData == null || csvData.Count == 0)
-            {
-                MessageBox.Show("No hay datos para guardar.", "Información",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
             if (string.IsNullOrEmpty(rutaArchivo))
             {
-                MessageBox.Show("No se ha cargado ningún archivo para guardar.", "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("No hay archivo abierto.");
                 return;
             }
-            if (selectedRowIndex >= 0 && selectedRowIndex < csvData.Count)
-            {
-                SaveEditorToCsvData(selectedRowIndex);
-            }
 
+            GuardarXML();
+            MessageBox.Show("Archivo XML guardado correctamente.");
+        }
+
+        private void GuardarXML()
+        {
             try
             {
-                Cursor = Cursors.WaitCursor;
+                XmlSerializer serializer = new XmlSerializer(typeof(List<Persona>));
 
-                var lines = new List<string>
+                using (FileStream fs = new FileStream(rutaArchivo, FileMode.Create))
                 {
-                     string.Join(",", headers)
-                };
-
-                lines.AddRange(csvData.Select(r => string.Join(",", r)));
-
-                File.WriteAllLines(rutaArchivo, lines);
-
-                MessageBox.Show("Archivo actualizado correctamente.", "Éxito",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    serializer.Serialize(fs, listaPersonas);
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error al actualizar el archivo: {ex.Message}",
-                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error al guardar XML: " + ex.Message);
             }
-            finally
-            {
-                Cursor = Cursors.Default;
-            }
+        }
+
+        private void dataGridView1_SelectionChanged(object sender, EventArgs e)
+        {
+            if (dataGridView1.CurrentRow == null) return;
+            if (dataGridView1.CurrentRow.Index < 0) return;
+            if (dataGridView1.CurrentRow.IsNewRow) return;
+            int index = dataGridView1.CurrentRow.Index;
+            txtNombre.Text = dataGridView1.CurrentRow.Cells[0].Value?.ToString() ?? "";
+            txtCelular.Text = dataGridView1.CurrentRow.Cells[1].Value?.ToString() ?? "";
         }
     }
 }

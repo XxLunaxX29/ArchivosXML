@@ -37,7 +37,6 @@
             btnEliminar = new Button();
             btnAgregar = new Button();
             dataGridView1 = new DataGridView();
-            dataGridView2 = new DataGridView();
             label1 = new Label();
             label2 = new Label();
             txtBuscar = new TextBox();
@@ -46,7 +45,6 @@
             label3 = new Label();
             ((System.ComponentModel.ISupportInitialize)bindingSource1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)dataGridView2).BeginInit();
             SuspendLayout();
             // 
             // btnBuscar
@@ -112,20 +110,11 @@
             // dataGridView1
             // 
             dataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridView1.Location = new Point(0, 144);
+            dataGridView1.Location = new Point(11, 160);
             dataGridView1.Name = "dataGridView1";
             dataGridView1.RowHeadersWidth = 51;
-            dataGridView1.Size = new Size(569, 220);
+            dataGridView1.Size = new Size(569, 287);
             dataGridView1.TabIndex = 6;
-            // 
-            // dataGridView2
-            // 
-            dataGridView2.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridView2.Location = new Point(0, 370);
-            dataGridView2.Name = "dataGridView2";
-            dataGridView2.RowHeadersWidth = 51;
-            dataGridView2.Size = new Size(569, 79);
-            dataGridView2.TabIndex = 7;
             // 
             // label1
             // 
@@ -186,7 +175,6 @@
             Controls.Add(txtBuscar);
             Controls.Add(label2);
             Controls.Add(label1);
-            Controls.Add(dataGridView2);
             Controls.Add(dataGridView1);
             Controls.Add(btnAgregar);
             Controls.Add(btnEliminar);
@@ -198,7 +186,6 @@
             Text = "Form1";
             ((System.ComponentModel.ISupportInitialize)bindingSource1).EndInit();
             ((System.ComponentModel.ISupportInitialize)dataGridView1).EndInit();
-            ((System.ComponentModel.ISupportInitialize)dataGridView2).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -213,7 +200,6 @@
         private Button btnEliminar;
         private Button btnAgregar;
         private DataGridView dataGridView1;
-        private DataGridView dataGridView2;
         private Label label1;
         private Label label2;
         private TextBox txtBuscar;
