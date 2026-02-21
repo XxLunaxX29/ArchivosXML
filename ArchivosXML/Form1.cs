@@ -174,13 +174,14 @@ namespace ArchivosXML
             }
 
             textoBuscar = textoBuscar.ToLower();
-
+            dataGridView1.ClearSelection();
             foreach (DataGridViewRow fila in dataGridView1.Rows)
             {
+                if(fila.IsNewRow) continue;
                 foreach (DataGridViewCell celda in fila.Cells)
                 {
                     if (celda.Value != null &&
-                        celda.Value.ToString().ToLower().Contains(textoBuscar))
+                        celda.Value.ToString().ToLower() == textoBuscar)
                     {
                         fila.Selected = true;
 
