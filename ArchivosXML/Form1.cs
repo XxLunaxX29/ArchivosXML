@@ -211,7 +211,7 @@ namespace ArchivosXML
                 try
                 {
                     string ruta = sfd.FileName;
-                    string encabezado = "Nombre, Carrera";
+                    string encabezado = "Nombre, # Celular";
                     string datos = txtNombre.Text + "," + txtCelular.Text;
                     File.WriteAllLines(ruta, new[] { encabezado, datos });
                     MessageBox.Show("Archivo creado exitosamente.",
